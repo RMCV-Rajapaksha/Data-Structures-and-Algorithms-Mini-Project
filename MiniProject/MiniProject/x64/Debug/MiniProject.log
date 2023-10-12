@@ -1,0 +1,4 @@
+﻿  MiniProject.cpp
+F:\Sem 3\EE3302EE3351 Data Structures and Algorithms\Programing project\MiniProject\MiniProject\MiniProject.cpp(281,19): warning C4834: discarding return value of function with 'nodiscard' attribute
+F:\Sem 3\EE3302EE3351 Data Structures and Algorithms\Programing project\MiniProject\MiniProject\MiniProject.cpp(312,8): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+  MiniProject.vcxproj -> F:\Sem 3\EE3302EE3351 Data Structures and Algorithms\Programing project\MiniProject\x64\Debug\MiniProject.exe
