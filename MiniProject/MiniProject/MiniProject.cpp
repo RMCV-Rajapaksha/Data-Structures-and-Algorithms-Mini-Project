@@ -1,18 +1,18 @@
-
 #include <sstream> //convert int into string
 #include <iostream>
-#include <string>
-#include <vector> 
-#include <list>
+#include <string> 
+#include <algorithm>
 #include <conio.h> //controle the console inputs
 #include <cstdlib>
-#include <ctime> // to get time
+#include <Windows.h>
+#include <limits>
 
-// current date/time based on current system
-//time_t now = time(0);
+#define TEAL "\033[1;36m"
+#define RESET "\033[0m"
+#define GREEN "\033[1;32m"
+#define RED "\033[1;31m"
+#define DELAY 1500
 
-// convert now to string form
-//char* dt = ctime(&now);
 
 using namespace std;
 
@@ -31,7 +31,7 @@ public:
 	{
 		url = -1;
 		time = -1;
-		user_name= -1;
+		user_name = -1;
 		password = -1;
 		next = NULL;
 	}
@@ -69,36 +69,48 @@ public:
 
 	}
 
-	void Insert_First(string url,string user , string pass , string time)  
+	void Insert_First(string url, string user, string pass, string Time)
 	{
-		Node* temp = new Node(url,user , pass, time);
-		if (head == NULL)    
-		{  
+		Node* temp = new Node(url, user, pass, Time);
+		if (head == NULL)
+		{
 			head = temp;
 			tail = temp;
 
 		}
 		else
-		{   
+		{
 			temp->next = head;
 			head = temp;
 
 		}
 		size++;
 	}
+
 	void Display()  // display history
 		// time complexity =O(n)
 	{
 		Node* temp = head;
-		for (int i = 0; i < size; i++)
-		{
-			cout << "URL of the web site : " << temp->url << endl;
-			cout << "User name : " << temp->user_name << endl;
-			cout << "Password : " << temp->password << endl;
-			cout << "The time the password was edited : " << temp->time << endl;
-			temp = temp->next;
+		if (temp == NULL) {
+			system("cls");
+			cout << RED << "History is Empty" << RESET << endl;
+			Sleep(DELAY);
+			system("cls");
+			return;
 		}
-
+		else {
+			for (int i = 0; i < size; i++)
+			{
+				system("cls");
+				cout << "________________________________________________________________________________\n" << endl;
+				cout << "URL of the web site : " << temp->url << endl;
+				cout << "User name : " << temp->user_name << endl;
+				cout << "Password : " << temp->password << endl;
+				cout << "Deleted " << temp->time << endl;
+				cout << "________________________________________________________________________________\n" << endl;
+				temp = temp->next;
+			}
+		}
 	}
 };
 
@@ -107,7 +119,7 @@ public:
 class hash1
 {
 private:
-	static const int tablesize = 190;
+	static const int tablesize = 200;
 
 	struct item
 	{
@@ -115,21 +127,60 @@ private:
 		string username;
 		string password;
 		item* next;
+		item* prev;
+
+		item() {
+			url = "";
+			username = "";
+			password = "";
+			next = NULL;
+			prev = NULL;
+		}
 
 	};
 	item* HashTable[tablesize];
 
+	string caesarDecrypt(string input) {
+		// tie complexity O(n)
+		int shift = 13;
+		string dPassword = "";
+		for (char c : input) {
+			if (isalpha(c)) {
+				char base = isupper(c) ? 'A' : 'a';
+				int shiftedValue = (c - base - shift + 26) % 26;
+				dPassword += static_cast<char>(shiftedValue + base);
+			}
+			else {
+				dPassword += c;
+			}
+		}
+		return dPassword;
+	}
+
+	string caesarEncrypt(string input) {
+		// time complexity O(n)
+		int shift = 13;
+		string ePassword = "";
+		for (char c : input) {
+			if (isalpha(c)) {
+				char base = isupper(c) ? 'A' : 'a';
+				ePassword += static_cast<char>((c - base + shift) % 26 + base);
+			}
+			else {
+				ePassword += c;
+			}
+		}
+		return ePassword;
+	}
+
 public:
+
 
 	hash1()
 	{
 		for (int i = 0; i < tablesize; i++)
 		{
 			HashTable[i] = new item;
-			HashTable[i]->url = "empty";
-			HashTable[i]->username = "empty";
-			HashTable[i]->password = "empty";
-			HashTable[i]->next = NULL;
 		}
 	}
 
@@ -151,42 +202,42 @@ public:
 
 	void AddUrl(string url, string username, string password)
 	{
+		//Time Complexity O(n^2) 
 		int index = Hash(url);
-		if (HashTable[index]->url == "empty")
+		if (HashTable[index]->url == "")
 		{
 			HashTable[index]->url = url;
-			HashTable[index]->username = username;
-			HashTable[index]->password = password;
+			HashTable[index]->username = caesarEncrypt(username);
+			HashTable[index]->password = caesarEncrypt(password);
 		}
 		else
 		{
 			item* ptr = HashTable[index];
 			item* n = new item;
 			n->url = url;
-			n->username = username;
-			n->password = password;
+			n->username = caesarEncrypt(username);
+			n->password = caesarEncrypt(password);
 			n->next = NULL;
 			while (ptr->next != NULL)
 			{
+				ptr->next->prev = ptr;
 				ptr = ptr->next;
 			}
 			ptr->next = n;
 		}
 	}
 
-
-
-
 	int NumberOfItemsInIndex(string url) {
+		//Time Complexity O(n)
 		int count = 0;
 		int index = Hash(url);
-		if (HashTable[index]->url == "empty") {
+		if (HashTable[index]->url == "") {
 			return count;
 		}
 		else {
 			count++;
 			item* Ptr = HashTable[index];
-			while (Ptr->next != NULL) {  
+			while (Ptr->next != NULL) {
 				count++;
 				Ptr = Ptr->next;
 			}
@@ -194,307 +245,464 @@ public:
 		return count;
 	}
 
-
-
-
-
 	void PrintInItemUrl(string url)  // print all the all usernameres and passwords stored in same url
 	{
+		//Time complexity O(n^2)
 		int index = Hash(url);
 		item* ptr = HashTable[index];
-		if (ptr->url == "empty")
+		if (ptr->url == "")
 		{
-			cout << "index = " << index << " is empty" << endl;
+			system("cls");
+			cout << RED << "There are no account for the given URL" << RESET << endl;
+			Sleep(DELAY);
+			system("cls");
 		}
 		else
 		{
-			cout << "index " << index << "contains the following items" << endl;
+			cout << "All the Accounts for the Given URL" << endl;
 			while (ptr != NULL)
 			{
-				cout << "--------------------------------\n";
+				cout << endl << "--------------------------------\n";
 				cout << ptr->url << endl;
-				cout << ptr->username << endl;
-				cout << ptr->password << endl;
-				cout << "-----------------------\n";
+				cout << caesarDecrypt(ptr->username) << endl;
+				cout << caesarDecrypt(ptr->password) << endl;
+				cout << "--------------------------------\n" << endl;
 				ptr = ptr->next;
 
 			}
 		}
 	}
 
-	void DeleteItem(string& url, string& username, string& password)  //delete the password using the url and username
+	int DeleteItem(string url, string username, string& password)  //delete the password using the url and username
 		//time complexity = O(n)
 	{
 		int index = Hash(url);
-
+		string encryptUsername = caesarEncrypt(username);
 		item* ptr = HashTable[index];
 		item* temp = NULL;
-		while (ptr->next != NULL)
-		{
 
-			if (ptr->next->url == url && ptr->next->username == username && ptr->next->next == NULL)
-			{
-				temp = ptr->next;
-				ptr->next = NULL;
-				url = temp->url;
-				username = temp->username;
-				password = temp->password;
-				delete temp;
-				return;
-
-			}
-			else if (ptr->url == url && ptr->username == username)
-			{
-				HashTable[index] = ptr->next;
-				temp = ptr;
-				url = temp->url;
-				username = temp->username;
-				password = temp->password;
-				return;
-			}
-			else if (ptr->next->url == url && ptr->next->next->username == username)
-			{
-				temp = ptr->next;
-				ptr->next = temp->next;
-				url = temp->url;
-				username = temp->username;
-				password = temp->password;
-				delete temp;
-				return;
-
-			}
-
-			ptr = ptr->next;
+		if (ptr->url == "") {
+			system("cls");
+			cout << RED << "There is no Such Account" << RESET << endl;
+			Sleep(DELAY);
+			system("cls");
+			return 0;
 		}
 
+		if (ptr->url != "" && ptr->next == NULL) {
 
+			if (ptr->url == url && ptr->username == encryptUsername) {
+				password = caesarDecrypt(ptr->password);
+				ptr->url = "";
+				ptr->username = "";
+				ptr->password = "";
+			}
+			return 1;
+		}
+		else if (ptr->url != "" && ptr->next != NULL) {
+			if (ptr->url == url && ptr->username == encryptUsername) {
+				HashTable[index] = ptr->next;
+				password = caesarDecrypt(ptr->password);
+				delete ptr;
+			}
+			return 1;
 
+		}
+		else {
 
+			while (ptr->next != NULL)
+			{
+
+				if (ptr->next->url == url && ptr->next->username == encryptUsername && ptr->next->next == NULL)
+				{
+					temp = ptr->next;
+					ptr->next = NULL;
+					password = caesarDecrypt(temp->password);
+					delete temp;
+					return 1;
+
+				}
+				else if (ptr->url == url && ptr->username == encryptUsername)
+				{
+					temp = ptr;
+					ptr->prev->next = ptr->next;
+					password = caesarDecrypt(temp->password);
+					delete temp;
+					return 1;
+				}
+
+				ptr = ptr->next;
+			}
+			system("cls");
+			cout << RED << "There is no Such Account" << RESET << endl;
+			Sleep(DELAY);
+			system("cls");
+			return 0;
+		}
 
 	}
 
-	void Search(string& url, string& username , string& password)  // shearch the password using url and username
+	void Search(string& url, string& username)  // search the password using url and username
 		//time comlexity =O(n)
 	{
-		
 		int index = Hash(url);
 		item* ptr = HashTable[index];
-		while (ptr->url == url, ptr->username == username)
-		{
-			if (ptr->url == url && ptr->username == username)
+		if (ptr->url == "") {
+			system("cls");
+			cout << RED << "There is no Such Account" << RESET << endl;
+			Sleep(DELAY);
+			system("cls");
+			return;
+		}
+		else {
+			while (ptr->next != NULL)
 			{
-				password = ptr->password;
+				if (ptr->url == url && ptr->username == caesarEncrypt(username))
+				{
+					break;
+				}
+				ptr = ptr->next;
+
+			}
+			if (ptr->url == url && ptr->username == caesarEncrypt(username)) {
+				system("cls");
+				cout << "URL = " << ptr->url << endl;
+				cout << "Username = " << caesarDecrypt(ptr->username) << endl;
+				cout << "Password = " << caesarDecrypt(ptr->password) << endl << endl;
+			}
+			else
+			{
+				system("cls");
+				cout << RED << "There is no Such Account" << RESET << endl;
+				Sleep(DELAY);
+				system("cls");
+			}
+		}
+
+	}
+
+	void Update(string url, string username, string password)
+	{
+		int index = Hash(url);
+		item* ptr = HashTable[index];
+		string encryptUsername = caesarEncrypt(username);
+		string encryptPassword = caesarEncrypt(password);
+		int count = 0;
+		while (ptr->url == url && ptr->username != encryptUsername)
+		{
+			if (ptr->url == url && ptr->username != encryptUsername)
+			{
+				ptr->password = encryptPassword;
+				count = count + 1;
+				break;
 
 			}
 			ptr = ptr->next;
 
+		}
+
+
+		if (ptr->url == "" || count == 0) {
+			system("cls");
+			cout << RED << "There is no Such Account" << RESET << endl;
+			Sleep(DELAY);
+			system("cls");
+		}
+		else {
+			system("cls");
+			cout << GREEN << "Password Successfully Updated" << RESET << endl;
+			Sleep(DELAY);
+			system("cls");
 		}
 	}
 };
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-string generatePassword( int len)  // Function for create a password according to the given lenth 
-// time complexity =O(n)
-{ 
-	int upperCount = 3;
-	int numCount = 2;
-	int charCount = 2;
-	int lowerCount = len - (upperCount + numCount + charCount);
-
-	string upperCase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-	string lowerCase = "abcdefghijklmnopqrstuvwxyz";
-	string numbers = "0123456789";
-	string specialChars = "!@#$%^&*";
-
-	string password;
-
-	
-	for (int i = 0; i < upperCount; i++) {
-		password += upperCase[rand() % upperCase.length()];
-	}
-	for (int i = 0; i < numCount; i++) {
-		password += numbers[rand() % numbers.length()];
-	}
-	for (int i = 0; i < charCount; i++) {
-		password += specialChars[rand() % specialChars.length()];
-	}
-	for (int i = 0; i < lowerCount; i++) {
-		password += lowerCase[rand() % lowerCase.length()];
-	}
-
-	
-	random_shuffle(password.begin(), password.end());
-
-	return password;
-
-
-}
-
-
-/*
-int UrlConvertToASCII(string url)  //convert url to ascii code to get as a key
-// time complexity =O(n)
+bool checkPW(string& pw)
 {
-	int y = url.length();
-	string  url1 = "";
-	stringstream stream;
-	for (int i = 0; i < y; i++)
-	{
-		int x = int(url[i]);
-		string x1 = to_string(x);
-		url1 = url1 + x1;
+	int u = 0;
+	int n = 0;
+	int s = 0;
 
+	for (char c : pw)
+	{
+		if ('A' <= c && c <= 'Z')
+		{
+			u = u + 1;
+		}
+		else if ('0' <= c && c <= '9')
+		{
+			n = n + 1;
+		}
+		else if (c == '!' || c == '@' || c == '#' || c == '$' || c == '%' || c == '^' || c == '&')
+		{
+			s = s + 1;
+		}
 	}
-	cout << "lllllllllll     " << url1 << endl;
-	int url2 = stoi(url1);
-	cout << "lllllllllll wwwww    " << url2 << endl;
-	return url2;
+
+	if (pw.length() >= 8 && s >= 1 && n >= 2 && u >= 2)
+	{
+
+		return 1;
+	}
+	else {
+		return 0;
+	}
 
 }
 
+void dummyData(hash1& hesy) {
+	hesy.AddUrl("account.google.com", "abc@gmail.com", "AbcD@12htgdG");
+	hesy.AddUrl("account.google.com", "xyz@gmail.com", "zcfD@12GuekdA");
+	hesy.AddUrl("www.facebook.com/login/", "abc@gmail.com", "Iker45@hkFd^");
+	hesy.AddUrl("twitter.com/i/flow/login", "abc@gmail.com", "Yne@D2ft5kel");
+	hesy.AddUrl("www.instagram.com/accounts/login/", "xyz@gmail.com", "O89hn$0dlsw");
+	hesy.AddUrl("github.com/login", "abc@gmail.com", "T67&hkJo8");
 
-*/
-
-
-
-
-
+}
 
 
 int main()
 {
-	char Password[20], Username[20] = "jimmy", US[10], ch;
-	int u = 0;
-	bool iscorrect = 0; 
-	while (iscorrect == false && u < 3) {
-		cout << "Enter the username : ";
-		cin >> US;
-		if (strcmp(Username, US) == 0)  // string compair function
-		{
-			cout << "Enter the password :\n"; iscorrect = true;
-			for (int i = 0; i <= 7; i++)
-			{
-				ch = getch();
-				Password[i] = ch;
-				ch = '*';
-				cout << ch;
-				if (ch != 13)
-				{
-					cout << "";
-				}
-				else if(ch!=8)
-				{
-					cout << "*";
-				}
-				cout << "Login succesful\n";
-			}
-		}
-		else
-		{
-			cout << "Wrong passwod or username\n";
-		}
-	}
-
-
-
 	hash1 hesy;
-
-	hesy.AddUrl("Alice", "Alice", "Coffee");
-	hesy.AddUrl("Alice", "Bob", "Tea");
-	hesy.AddUrl("Bob", "Charlie", "Water");
-	hesy.AddUrl("Charlie", "Bob", "Tea");
-	hesy.AddUrl("Bob", "Charlvvvvvvvvvie", "Water");
-	hesy.AddUrl("Charlie", "Bob", "Tea");
-	hesy.AddUrl("Bob", "33333333ggggg", "Water");
-	hesy.AddUrl("Charlie", "Bob", "Tea");
-	hesy.AddUrl("Bob", "Charggggggggggggglie", "Water");
-	string x = "Bob";
-	string y = "Charlvvvvvvvvvie";
-	string z;
-	hesy.DeleteItem(x, y, z);
-	cout << x << endl;
-	cout << y << endl;
-	cout << z << endl;
-	
-
-
-
-	/*string user_name1;
-	string password1;
-	cout << "Enter your user name :- " << endl;
-	cin >> user_name1;
-	cout << "Enter your password :- " << endl;
-	cin >> password1;
-	
-
-	//testcase
-	cout << generatePassword(12) << endl;
-	//testcase
 	Singly_Linked_List s;
-	s.Insert_First("yttty", "chamara", "pass", "45");
-	s.Display();
+	dummyData(hesy);
+	string no = "0";
+	string no2 = "0";
+	cout << endl;
+	cout << TEAL << "\t\t _____________ WELCOME _____________\n\n\n" << RESET;
+	int count;
+	string userId, password, id, pass;
+	id = "admin";
+	pass = "admin";
 
-	int no = 0;
-	do
-	{
-		cout << "Enter the number :-" << endl;
-		cin >> no;
 
-		cout << "1. Store the new password " << endl;
-		cout << "2. Change the system password and user name  " << endl;
-		cout << "3. Store the new password " << endl;
-		cout << "4. Store the new password " << endl;
-		cout << "5. History of Deleting Activities " << endl;
-		cout << "6. Store the new password " << endl;
-		cout << "7. Store the new password " << endl;
-		cout << "8. Store the new password " << endl;
-		cout << "9. Store the new password " << endl;
-		cout << "10. quize " << endl;
+	do {
+		cout << "1. Login " << endl;
+		cout << "2. Exit " << endl;
+		cout << "\nSelect Option : ";
+		cin >> no2;
 
-		cin >> no;
 
-		switch (no)
+		switch (no2[0])
 		{
-		case 1:
-			break;
-		case 2:
-			break;
-		case 3:
-			break;
-		case 4:
-			break;
-		case 5:
-			break;
-		case 6:
-			break;
-		case 7:
-			break;
-		case 9:
-			break;
-		default:
-			break;
+		case '1':
+			system("cls");
+			cout << "Please enter the username and password  " << endl;
+			cout << "" << endl;
+			cout << "Username : ";
+			cin >> userId;
+			cout << "Password : ";
+			cin >> password;
 
+			if (userId == id && password == pass)
+			{
+				system("cls");
+				cout << GREEN << "LOGIN Successfull" << RESET;
+				Sleep(DELAY);
+				system("cls");
+
+				do
+				{
+
+					cout << TEAL << "___________ Password Management System ___________" << RESET << endl;
+					cout << endl;
+
+					cout << "1. Add new Account " << endl;
+					cout << "2. Change Existing Password  " << endl;
+					cout << "3. Delete Existing password " << endl;
+					cout << "4. Search Password " << endl;
+					cout << "5. Number of Accounts in Same URL " << endl;
+					cout << "6. Show All the Account in a URL " << endl;
+					cout << "7. Deleted History " << endl;
+					cout << "8. Quit " << endl;
+					cout << "\nSelect Option : ";
+					cin >> no;
+
+
+
+					switch (no[0])
+					{
+					case '1':
+					{
+						string url1;
+						string username1;
+						string password1;
+						cout << " Enter the url : ";
+						cin >> url1;
+						cout << " Enter the userename : ";
+						cin >> username1;
+						bool q = 0;
+						while (q != 1) {
+							cout << " Enter the password : ";
+							cin >> password1;
+							q = checkPW(password1);
+							if (q == 1) {
+								hesy.AddUrl(url1, username1, password1);
+								system("cls");
+								cout << GREEN << "Account Successfully Added" << RESET << endl;
+								Sleep(DELAY);
+								system("cls");
+							}
+							else {
+								cout << RED << "\nEntered password is not secure enough." << RESET << endl;
+								cout << RED << " Use at least two upper case letters, numbers and one symbol" << RESET << endl;
+								cout << RED << "Also there should be at least 8 characters." << RESET << endl;
+								Sleep(DELAY * 2);
+								system("cls");
+							}
+						}
+						system("cls");
+					}
+					break;
+					case '2': {
+						string url1;
+						string username1;
+						string password1;
+						cout << " Enter the url : ";
+						cin >> url1;
+						cout << " Enter the username : ";
+						cin >> username1;
+						bool q = 0;
+						while (q != 1) {
+							cout << " Enter the new password : ";
+							cin >> password1;
+							q = checkPW(password1);
+							if (q == 1) {
+								hesy.Update(url1, username1, password1);
+							}
+							else {
+								cout << RED << "\nEntered password is not secure enough." << RESET << endl;
+								cout << RED << " Use at least two upper case letters, numbers and one symbol" << RESET << endl;
+								cout << RED << "Also there should be at least 8 characters." << RESET << endl;
+								Sleep(DELAY * 2);
+								system("cls");
+							}
+
+						}
+					}
+							break;
+
+					case '3':
+					{
+						string url1;
+						string username1;
+						string password1 = "";
+						cout << " Enter the url : ";
+						cin >> url1;
+						cout << " Enter the username : ";
+						cin >> username1;
+						int status = hesy.DeleteItem(url1, username1, password1);
+						if (status == 1) {
+							time_t currentTime;
+							time(&currentTime);
+
+							struct tm localTime;
+							localtime_s(&localTime, &currentTime);
+
+							int day = localTime.tm_mday;
+							int month = localTime.tm_mon + 1;  // Month is 0-indexed, so add 1
+							int year = localTime.tm_year + 1900;  // Years since 1900
+							int houre = localTime.tm_hour;
+							int mini = localTime.tm_min;
+							int sec = localTime.tm_sec;
+							string t = "Date : " + to_string(day) + "/" + to_string(month) + "/" + to_string(year) + "  Time : " + to_string(houre) + ":" + to_string(mini) + ":" + to_string(sec);
+							s.Insert_First(url1, username1, password1, t);
+							system("cls");
+							cout << GREEN << "Account Successfully Deleted" << RESET << endl;
+							Sleep(DELAY);
+							system("cls");
+						}
+						system("cls");
+
+
+					}
+					break;
+					case '4':
+					{
+						string url1;
+						string username1;
+						string password1;
+						cout << " Enter the url : ";
+						cin >> url1;
+						cout << " Enter the username : ";
+						cin >> username1;
+						hesy.Search(url1, username1);
+
+
+					}
+
+					break;
+					case '5':
+					{
+						string url1;
+						cout << " Enter the url : ";
+						cin >> url1;
+						int count = hesy.NumberOfItemsInIndex(url1);
+						if (count <= 0) {
+							system("cls");
+							cout << RED << "There are no accounts in the system for the given URL" << RESET << endl;
+							Sleep(DELAY * 2);
+							system("cls");
+						}
+						system("cls");
+						cout << endl;
+						cout << "Number of account in same url : " << hesy.NumberOfItemsInIndex(url1) << endl;
+					}
+					break;
+					case '6':
+					{
+						string url1;
+						cout << " Enter the url : ";
+						cin >> url1;
+						system("cls");
+						hesy.PrintInItemUrl(url1);
+
+					}
+					break;
+					case '7':
+					{
+						s.Display();
+					}
+					break;
+					case '8':
+					{
+						system("cls");
+						main();
+					}
+					break;
+					default:
+					{
+						system("cls");
+						cout << RED << "Invalid Input. Try Again" << RESET << endl;
+						Sleep(DELAY);
+						system("cls");
+
+					}
+					break;
+					}
+				} while (true);
+			}
+			else
+			{
+				cout << RED << "\n LOGIN ERROR \n please check your user name and password \n" << RESET;
+
+				Sleep(DELAY);
+				system("cls");
+				main();
+
+			}
+			break;
+		case '2':
+			exit(0);
+		default:
+			system("cls");
+			cout << RED << "Invalid Input Try Again" << RESET << endl;
+			Sleep(DELAY);
+			system("cls");
+			main();
 		}
 
-
-
-	} while (no == 10);
-
-	*/
-
-
+	} while (no[0] <= 2);
 
 }
-
